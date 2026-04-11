@@ -318,6 +318,84 @@ server.registerTool(
   },
 );
 
+// ─── Ephemeral Agents ────────────────────────────────────────────────────
+
+server.registerTool(
+  "vorim_register_ephemeral",
+  {
+    description: "Register an ephemeral agent with a did:key identity. Short-lived agents that auto-expire. Returns agent_id, did:key, and keypair.",
+    inputSchema: {
+      capabilities: z.array(z.string()).describe("List of agent capabilities (e.g. ['search', 'write'])"),
+      scopes: z.array(z.string()).describe("Permission scopes to grant (e.g. ['agent:read', 'agent:execute'])"),
+      ttl_seconds: z.number().optional().describe("Time-to-live in seconds before the agent auto-expires"),
+    },
+  },
+  async ({ capabilities, scopes, ttl_seconds }) => {
+    const body: Record<string, unknown> = { capabilities, scopes };
+    if (ttl_seconds) body.ttl_seconds = ttl_seconds;
+    const result = await vorimPost("/agents/ephemeral", body);
+    return text(result);
+  },
+);
+
+// ─── Credential Delegation ──────────────────────────────────────────────
+
+server.registerTool(
+  "vorim_delegate_credential",
+  {
+    description: "Delegate a credential to an agent. Creates a scoped delegation with optional rate limits and expiry.",
+    inputSchema: {
+      connection_id: z.string().describe("The connection or credential identifier to delegate"),
+      agent_id: z.string().describe("The agent receiving the delegation"),
+      scopes_delegated: z.array(z.string()).describe("Scopes to delegate (e.g. ['read', 'write'])"),
+      max_requests_per_hr: z.number().optional().describe("Maximum requests per hour for this delegation"),
+      valid_until: z.string().optional().describe("Expiry timestamp (ISO 8601)"),
+    },
+  },
+  async ({ connection_id, agent_id, scopes_delegated, max_requests_per_hr, valid_until }) => {
+    const body: Record<string, unknown> = { connection_id, agent_id, scopes_delegated };
+    if (max_requests_per_hr) body.max_requests_per_hr = max_requests_per_hr;
+    if (valid_until) body.valid_until = valid_until;
+    const result = await vorimPost("/credentials/delegations", body);
+    return text(result);
+  },
+);
+
+server.registerTool(
+  "vorim_request_token",
+  {
+    description: "Request a short-lived access token for an agent. Returns a scoped token for the specified provider.",
+    inputSchema: {
+      agent_id: z.string().describe("The agent requesting the token"),
+      scope: z.string().describe("Permission scope for the token"),
+      provider_id: z.string().optional().describe("Target provider identifier"),
+    },
+  },
+  async ({ agent_id, scope, provider_id }) => {
+    const body: Record<string, unknown> = { agent_id, scope };
+    if (provider_id) body.provider_id = provider_id;
+    const result = await vorimPost("/credentials/token", body);
+    return text(result);
+  },
+);
+
+server.registerTool(
+  "vorim_list_delegations",
+  {
+    description: "List credential delegations. Optionally filter by agent_id to see delegations for a specific agent.",
+    inputSchema: {
+      agent_id: z.string().optional().describe("Filter delegations by agent identifier"),
+    },
+  },
+  async ({ agent_id }) => {
+    const params = new URLSearchParams();
+    if (agent_id) params.set("agent_id", agent_id);
+    const qs = params.toString();
+    const result = await vorimGet(`/credentials/delegations${qs ? "?" + qs : ""}`);
+    return text(result);
+  },
+);
+
 // ─── Start ────────────────────────────────────────────────────────────────
 
 async function main() {
