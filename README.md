@@ -14,7 +14,7 @@ The protocol underneath (VAIP) is open, MIT-licensed, and submitted to IETF as `
 
 This package is the **MCP (Model Context Protocol) server** that exposes 19 Vorim tools to any MCP-compatible AI client.
 
-Works with **Claude Desktop**, **Cursor**, **VS Code**, and any other MCP client.
+Works with **Claude Desktop**, **Cursor**, **VS Code**, **Google Antigravity**, and any other MCP client.
 
 ## Quick Start
 
@@ -69,6 +69,26 @@ Add to `.cursor/mcp.json` in your project root:
 ### VS Code
 
 Add to your VS Code MCP settings with the same format.
+
+### Google Antigravity
+
+Add to the workspace config at `.agents/mcp_config.json`, or the global config at `~/.gemini/config/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "vorim": {
+      "command": "npx",
+      "args": ["@vorim/mcp-server"],
+      "env": {
+        "VORIM_API_KEY": "agid_sk_live_..."
+      }
+    }
+  }
+}
+```
+
+You can also add it from the UI: Settings → Customizations → Installed MCP Servers → Add MCP.
 
 ## Get an API Key
 
